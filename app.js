@@ -1,8 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const bodyParser = require('body-parser')
 const ejs = require('ejs');
 const mongoose = require('mongoose');
-
+const encrypt = require('mongoose-encryption');
 
 const app = express()
 
@@ -12,10 +13,13 @@ app.use(express.static('public'))
 mongoose.connect('mongodb://localhost:27017/secretUserDB');
 
 // creat a schema
-const userSchema = {
+const userSchema = new mongoose.Schema({
     email: String,
     password: String
-};
+});
+
+// ONly the password is encrypted because the email will be used for searching during login
+userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ['password'] });
 
 // create a model
 User = new mongoose.model('User', userSchema);
