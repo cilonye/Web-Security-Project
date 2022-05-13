@@ -3,7 +3,10 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const ejs = require('ejs');
 const mongoose = require('mongoose');
-const md5 = require('md5');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
+
 
 const app = express()
 
@@ -37,25 +40,34 @@ app.get('/login', (req, res) => {
 
 app.post('/register', (req, res) => {
     // create a user
-    const newUser = new User({
-        email: req.body.username,
-        password: md5(req.body.password)
-    });
-
-    // save the user and if save the render secret page
-    newUser.save(function (err) {
-        if (err) {
-            console.error(err);
+    bcrypt.hash(req.body.password, saltRounds, function(bcryptErr, hash) {
+        // Store hash in your password DB.
+        if (bcryptErr) {
+            console.log(bcryptErr);
         }else {
-            res.render("secrets");
+            const newUser = new User({
+                email: req.body.username,
+                password: hash
+            });
+            
+            // save the user and if save the render secret page
+            newUser.save(function (err) {
+                if (err) {
+                    console.error(err);
+                }else {
+                    res.render("secrets");
+                }
+            })
         }
-    })
+        
+    });
+    
 });
   
 app.post('/login', (req, res) => {
     // Get user input
     const userEmail = req.body.username;
-    const userPassword = md5(req.body.password);
+    const userPassword = req.body.password;
 
     //   check if an email exists 
     // check if the password match the email
@@ -65,10 +77,13 @@ app.post('/login', (req, res) => {
             console.log(err);
         }else {
             if (user){
-                console.log(user);
-                if (user.password === userPassword) {
-                    res.render("secrets")
-                }
+                bcrypt.compare(userPassword, user.password, function(compareErr, result) {
+                    if (result === true){
+                        res.render("secrets")
+                    }else {
+                        console.log(compareErr)
+                    }
+                });
             }
         }
     })
