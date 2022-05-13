@@ -3,7 +3,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const ejs = require('ejs');
 const mongoose = require('mongoose');
-const encrypt = require('mongoose-encryption');
+const md5 = require('md5');
 
 const app = express()
 
@@ -18,8 +18,6 @@ const userSchema = new mongoose.Schema({
     password: String
 });
 
-// ONly the password is encrypted because the email will be used for searching during login
-userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ['password'] });
 
 // create a model
 User = new mongoose.model('User', userSchema);
@@ -41,7 +39,7 @@ app.post('/register', (req, res) => {
     // create a user
     const newUser = new User({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     });
 
     // save the user and if save the render secret page
@@ -57,7 +55,7 @@ app.post('/register', (req, res) => {
 app.post('/login', (req, res) => {
     // Get user input
     const userEmail = req.body.username;
-    const userPassword = req.body.password;
+    const userPassword = md5(req.body.password);
 
     //   check if an email exists 
     // check if the password match the email
